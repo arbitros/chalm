@@ -1,0 +1,83 @@
+% EXERCISE 1
+%% (i)
+out = evfit(-data);
+mu_hat = -out(1);
+beta_hat = out(2);
+
+function y = Gumbel(x, mu, beta)
+    y = exp(-(x-mu)/(beta)).*exp(-exp(-(x-mu)/beta));
+end
+
+f = @Gumbel;
+x = linspace(0,20,200);
+
+hold on
+histogram(data, 'Normalization','probability');
+plot(x,f(x, mu_hat, beta_hat),"red");
+hold off
+%% (ii)
+
+mu_star = zeros(2000,1);
+x_max = zeros(2000,1);
+
+n = 200;
+
+rng(123);
+for i = 1:2000
+    x_star = -evrnd(-mu_hat,beta_hat,1,n);
+    out = evfit(-x_star);
+    mu_star(i) = -out(1);
+
+    x_max(i) = max(x_star);
+end
+figure(1)
+histogram(mu_star);
+figure(2)
+histogram(x_max);
+x_mean = sum(mu_star)/2000;
+
+%% (iii)
+alpha = 0.05;
+
+pd = fitdist(mu_star,"Normal");
+confInt = pd.paramci(alpha);
+mu_top = confInt(2,1);
+
+function y = GumbelPrimitive(x,mu,beta)
+    y = exp(-exp(-(x-mu)/beta));
+end
+
+function x = GumbelPrimInversion(y,mu,beta)
+    x = mu - beta*log(-log(y));
+end
+
+g = @GumbelPrimitive;
+h = @GumbelPrimInversion;
+
+maxHeight = h(1-alpha, mu_top, beta_hat);
+
+disp("Maximum height of wave with " + (1-alpha) + " certainty: " + maxHeight);
+
+
+% Exercise 2
+%% (i)
+data = readtable("gametime.txt");
+
+control = data(strcmp(data.Group,"Control"),:);
+variant = data(strcmp(data.Group,"Variant"),:);
+
+mean(control.UserID)
+mean(variant.UserID)
+
+means = zeros(2000,2);
+
+rng(123)
+for i = 1:2000
+    controlIndices = uint32(1500.*rand(int32(1500*0.5),1));
+    variantIndices = uint32(1100.*rand(int32(1100*0.5),1));
+
+    means(i,1) = mean(control.IGT(controlIndices));
+    means(i,2) = mean(variant.IGT(variantIndices));
+end
+
+%control.IGT(int32(5.*rand(int32(5/2),1)))
