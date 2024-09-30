@@ -1,0 +1,183 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+
+#%%
+import numpy as np
+import matplotlib.pyplot as plt
+
+f = lambda x : 0.5*(x**5+x**3)
+#%% Question 1
+# Analytical computation
+
+# (1/2)(1/6+1/4) = (1/2)*(5/12) = 5/24
+
+# Numerical
+
+import random as rnd
+M = 1000
+randList = [None] * M
+
+for i in range(1,M):
+    randList[i] = rnd.random()
+    
+f = lambda x : 0.5*(x**5+x**3)
+
+sum_ = 0
+
+for i in range(1,M):
+    sum_ += f(randList[i])
+
+montCrude = sum_/M
+print(abs(5/24 - montCrude))
+#%% Question 2
+
+M=1000
+f = lambda x : 0.5*(x**5+x**3)
+
+rand_U = np.zeros([M,2])
+
+for i in range(0,2):
+    rand_U[:,i] = np.random.random(M)
+
+sum_ = 0
+for i in range(0,M):
+    x = rand_U[i,0]
+    y = rand_U[i,1]
+    
+    if (y <= f(x)):
+        sum_ += 1
+
+montHM = sum_/M
+print(abs(5/24 - montHM))
+
+#%% Question 3
+
+# p = 5/24
+# Var[Z] = 5/24(1-5/24)
+
+varHM = (5/24)*(1-5/24)
+varMC = (1/4)*(1/11+2/9+1/7)-(5/24)**2
+
+print(varMC,varHM)
+
+
+
+#%% Question 4
+
+theta = 5/24
+
+N = 20
+M = 200
+
+# CRUDE MONTE CARLO
+
+theta_hat = np.zeros([N,1])
+sum_ = 0
+
+for i in range(0,N):
+    rand_U = np.random.random(M)
+    
+    for j in range(0,M):
+        sum_ += f(rand_U[j])
+    theta_hat[i] = sum_/M
+    sum_ = 0
+
+variance_CRUDE = np.sqrt((1/(N*M))*sum((theta_hat - theta)**2))
+
+print("CRUDE: ", variance_CRUDE)
+
+# HIT-MISS MONTE CARLO
+
+theta_hat = np.zeros([N,1])
+sum_ = 0
+
+for i in range(0,N):
+    x = np.random.random(M)
+    y = np.random.random(M)
+    
+    for j in range(0,M):
+        if (y[j] <= f(x[j])):
+            sum_ += 1
+    theta_hat[i] = sum_/M
+    
+variance_HM = np.sqrt((1/(M*N))*sum((theta_hat - theta)**2))
+
+print("HIT-MISS: ", variance_HM)
+
+
+#%% Question 5
+
+theta = 5/24
+
+# CRUDE
+N = 20
+diff_CRUDE = np.zeros([N,1])
+
+sum_ = 0
+
+for i in range(0,N):
+    M = 2**(i+1)
+    rand_U = np.random.random(M)
+    for j in range(0,M):
+        sum_ += f(rand_U[j])
+    theta_approx = sum_/M
+    diff_CRUDE[i] = abs(theta_approx - theta)
+    sum_ = 0
+    
+xbase = np.logspace(1,20,20,base=2)
+
+plt.loglog(xbase, diff_CRUDE,base=2)
+plt.loglog(xbase, xbase**(-1/2),base=2)
+
+# HIT OR MISS
+sum_ = 0
+diff_HM = np.zeros([N,1])
+
+for i in range(0,N):
+    M = 2**(i+1)
+    x = np.random.random(M)
+    y = np.random.random(M)
+    for j in range(0,M):
+        if (y[j] <= f(x[j])):
+            sum_ += 1
+    theta_approx = sum_/M
+    diff_HM[i] = abs(theta_approx - theta)
+    sum_ = 0
+    
+xbase = np.logspace(1,20,20,base=2)
+
+plt.loglog(xbase, diff_HM,base=2)
+plt.loglog(xbase, xbase**(-1/2),base=2)
+    
+plt.legend()
+
+#%% Question 6
+
+theta = 5/24
+
+N = 10
+M = 100
+P = 20
+
+# CRUDE
+
+sum_ = 0
+
+variance_CRUDE_N = np.empty([N,1])
+variance_CRUDE = np.empty([P,1])
+
+for i in range(0,P):
+    M = 2**(1+i)
+    for j in range(0,N):
+        U = np.random.random(M)
+        for k in range(0,M):
+            sum_ += f(U[k])
+        theta_approx = sum_/M
+        variance_CRUDE_N[j] = (theta_approx-theta)**2
+    variance_CRUDE[i] = np.sqrt(sum(variance_CRUDE_N)/N)
+
+xbase = np.logspace(1,20,20,base=2)
+
+plt.loglog(xbase, variance_CRUDE,base=2)
+plt.loglog(xbase, xbase**(-1/2),base=2)
