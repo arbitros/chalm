@@ -61,8 +61,6 @@ varMC = (1/4)*(1/11+2/9+1/7)-(5/24)**2
 
 print(varMC,varHM)
 
-
-
 #%% Question 4
 
 theta = 5/24
@@ -104,7 +102,6 @@ for i in range(0,N):
 variance_HM = np.sqrt((1/(M*N))*sum((theta_hat - theta)**2))
 
 print("HIT-MISS: ", variance_HM)
-
 
 #%% Question 5
 
@@ -149,15 +146,13 @@ xbase = np.logspace(1,20,20,base=2)
 
 plt.loglog(xbase, diff_HM,base=2)
 plt.loglog(xbase, xbase**(-1/2),base=2)
-    
-plt.legend()
 
 #%% Question 6
 
 theta = 5/24
 
 N = 10
-M = 100
+M = 200
 P = 20
 
 # CRUDE
@@ -175,9 +170,44 @@ for i in range(0,P):
             sum_ += f(U[k])
         theta_approx = sum_/M
         variance_CRUDE_N[j] = (theta_approx-theta)**2
+        sum_ = 0
     variance_CRUDE[i] = np.sqrt(sum(variance_CRUDE_N)/N)
 
 xbase = np.logspace(1,20,20,base=2)
 
 plt.loglog(xbase, variance_CRUDE,base=2)
 plt.loglog(xbase, xbase**(-1/2),base=2)
+
+# HIT OR MISS
+sum_ = 0
+variance_HM_N = np.empty([N,1])
+variance_HM = np.empty([P,1])
+
+for i in range(0,P):
+    M = 2**(i+1)
+    for j in range(0,N):
+        x = np.random.random(M)
+        y = np.random.random(M)
+        for k in range(0,M):
+            if (y[k] <= f(x[k])):
+                sum_ += 1
+        theta_approx = sum_/M
+        variance_HM_N[j] = (theta_approx-theta)**2
+        sum_ = 0
+    variance_HM[i] = np.sqrt(sum(variance_HM_N)/N)
+    
+    
+xbase = np.logspace(1,20,20,base=2)
+
+plt.loglog(xbase, variance_HM,base=2)
+plt.loglog(xbase, xbase**(-1/2),base=2)
+
+
+
+
+
+
+
+
+
+
