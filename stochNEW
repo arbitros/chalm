@@ -1,0 +1,143 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Oct  2 17:58:55 2024
+
+@author: david
+"""
+
+#%%
+# packages used
+import numpy as np
+import matplotlib.pyplot as plt
+
+#%% Question 1
+
+def noise(size):
+    N = 2**size
+    h = 1/N
+
+    rand = np.sqrt(h)*np.random.randn(N)
+
+    brown = [None] * (size)
+    
+    _sum = 0
+    for i in range(0, size):
+        step = 2**i
+        length = int(N/step)
+        result = np.empty([length])
+        
+        for j in range(0,length):
+             _sum += sum(rand[step*j : step*j+step]) # add the appropriate sampled values together for lower resolutions
+             result[j] = _sum
+        brown[i] = np.append(0, result)
+        _sum = 0
+        
+    return brown
+
+brown = noise(10)
+
+for i in range(0,len(brown)):
+    M = len(brown[i])
+    plt.plot(np.linspace(0,1,M), brown[i])
+plt.xlabel("(t)")
+plt.ylabel("X(t)")
+
+#%% Question 2
+    
+def stoch_approx(mu, sigma, brown):
+    length = len(brown)
+    h = 1/length
+    result = np.empty(length-1)
+    
+    X_h = 1
+    for i in range(0,length):
+        if (i != length-1):
+            result[i] = X_h
+            X_h = (1+h*mu)*X_h+sigma*X_h*(brown[i+1] - brown[i])
+        
+    return result
+
+def stoch_true(mu, sigma, t, brown):
+    return np.exp((mu-sigma**2/2)*t + sigma*brown)
+    
+size = 10
+
+brown = noise(size)
+
+stochs = [None] * size
+
+for i in range(0,size):
+    stochs[i] = stoch_approx(2,1,brown[i])
+    plt.plot(np.linspace(0,1,len(stochs[i])),stochs[i])
+
+true = stoch_true(2, 1, np.linspace(0,1,1025), brown[0])
+plt.plot(np.linspace(0,1,len(stochs[0])+1), true[0:1025], label = "true",linestyle="dotted")
+
+plt.xlabel("(t)")
+plt.ylabel("X(t)")
+plt.legend()
+
+#%% Question 3
+
+size = 10
+M = 1000
+
+N = 2**size
+
+values = np.empty([M,size])
+
+for m in range(0,M):
+    rand = np.random.randn(N)
+    
+    brown = noise(size)
+    
+    last_true = stoch_true(2, 1, 1, brown[i][-1])
+
+    stochs = [None] * size
+    for i in range(0, size):
+        stochs[i] = stoch_approx(2,1,brown[i])
+        values[m,i] = (stochs[i][-1] - last_true)**2
+
+strong = np.empty(size)
+
+for i in range(0,size):
+    strong[i] = np.sqrt(sum(values[:,i])/M)
+
+t = np.logspace(10,1,10,base=2) # in the computations i = 1 corresponds to i = 10 because of how i computed the noise
+t = 1/t
+
+plt.loglog(t, strong, base=2,label="strong")
+plt.loglog(t,np.sqrt(t),base = 2, label = "$sqrt(t)$")
+plt.legend()
+
+#%% Question 4
+mu = 2
+sigma = 1
+M = 1000
+
+values = np.empty([M,size])
+
+for m in range(0,M):
+    rand = np.random.randn(N)
+    
+    brown = noise(size)
+
+    stochs = [None] * size
+    
+    for i in range(0, size):
+        stochs[i] = stoch_approx(2,1,brown[i])
+        values[m,i] = stochs[i][-1]
+
+weak = np.empty(size)
+
+for i in range(0,size):
+    weak[i] = np.abs(sum(values[:, i])/M - np.exp(mu))
+    
+t = np.logspace(10,1,10,base=2)
+t = 1/t
+
+plt.loglog(t, weak, base=2, label="weak")
+plt.loglog(t,np.sqrt(t),base = 2, label = "$sqrt(t)$")
+plt.legend()
+plt.show()
