@@ -13,12 +13,13 @@ import matplotlib.pyplot as plt
 
 #%% Question 1
 
-size = 10 # 
+size = 10
 N = 2**size
 h = 1/N
+
 rand = np.sqrt(h)*np.random.randn(N)
 
-brown = [None] * size
+brown = [None] * (size)
 
 num = 0
 for i in range(0, size):
@@ -39,3 +40,103 @@ for i in range(0,len(brown)):
     plt.plot(np.linspace(0,1,M), brown[i])
 plt.xlabel("(t)")
 plt.ylabel("X(t)")
+
+#%% Question 2
+
+size = 10
+mu = 2
+sigma = 1
+
+stoch = [None] * (size-1)
+
+
+
+for i in range (0,size-1):
+    points = len(brown[i]) 
+    h=1/points
+    result = np.empty([points-1])
+    
+    X_h = 1
+    for j in range(0,points):
+        if (j != points-1):
+            result[j] = X_h
+            X_h = (1+h*mu)*X_h+sigma*X_h*(brown[i][j+1] - brown[i][j])
+            
+        else:
+            continue
+    
+    stoch[i] = result
+
+true = np.exp((mu-sigma**2/2)*np.linspace(0,1,1025)+sigma*brown[0])
+
+for i in range(0,len(stoch)):
+    M = len(stoch[i])
+    plt.plot(np.linspace(0,1,M), stoch[i])
+
+plt.plot(np.linspace(0,1,len(stoch[0])), stoch[0]) # check so that the approximation is correct
+plt.plot(np.linspace(0,1,len(stoch[0])+1), true[0:1025], label = "true",linestyle="dotted")
+plt.legend()
+
+plt.xlabel("(t)")
+plt.ylabel("X(t)")
+
+#%% Question 3
+
+size = 10
+N = 2**size
+h = 1/N
+
+M = 1000
+np.random.seed(123)
+
+VALUES = np.empty([1000,size])
+
+num = 0
+
+for m in range (0,M):
+    rand = np.sqrt(h)*np.random.randn(N)
+    
+    for i in range(0, size): # iterate over h_i
+        div = 2**i
+        S = int(N/div)
+        brown = np.empty([S])
+        
+        for j in range(0,S):
+            num += sum(rand[div*j : div*j+div]) # add the appropriate sampled values together for lower resolutions
+            brown[j] = num
+        
+        num = 0
+        brown = np.append(0, brown) # start at 0
+        
+        for k in range(0, S):
+            result = np.empty([S])
+            
+            X_h = 1
+            
+            if (k != S-1):
+                X_h = (1+h*mu)*X_h+sigma*X_h*(brown[k+1] - brown[k])
+                result[k] = X_h
+            else:
+                continue
+        X_1 = np.exp((mu-sigma**2/2)*1+sigma*brown[-1])
+        
+        VALUES[m,i] = (X_1-result[-1])**2
+
+strong_e = np.empty([size])
+for i in range(0,size):
+    strong_e[i] = np.sqrt(sum(VALUES[:,i])/M)
+h = np.logspace(1,10,10,base=2)
+plt.loglog(1/h, strong_e,base=2)
+plt.loglog(1/h, np.sqrt(h),base=2)
+plt.xlabel("h")
+plt.ylabel("strong")
+
+#%% Question 4
+    
+    
+    
+    
+    
+    
+    
+    
