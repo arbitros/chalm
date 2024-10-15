@@ -12,8 +12,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 #%% Question 1
+size = 10 # h=2^(-i), i = [1,2, ..., size]
 
 def noise(size): # define a function to generate brownian paths
+    """
+    
+
+    Parameters
+    ----------
+    size : int 
+    h=2^(-i), i = [1,2, ..., size]
+    """
     N = 2**size
     h = 1/N
 
@@ -47,32 +56,44 @@ plt.ylabel("X(t)")
     
 def stoch_approx(mu, sigma, brown): # define a function to approximate the stochastic process with the given recursion
     length = len(brown)
-    h = 1/length
+    h = 1/length # save a new h for each resolution
     result = np.empty(length-1)
     
-    X_h = 1
+    X_h = 1 # the starting point for the recursion as given in the assignment
     for i in range(0,length):
         if (i != length-1):
             result[i] = X_h
-            X_h = (1+h*mu)*X_h+sigma*X_h*(brown[i+1] - brown[i])
+            X_h = (1+h*mu)*X_h+sigma*X_h*(brown[i+1] - brown[i]) # perform the recursion
         
-    return result
+    return result # return the resulting vector
 
-def stoch_true(mu, sigma, t, brown):
+def stoch_true(mu, sigma, t, brown): # the function of the stochastic process given in the assignment, 
+    """
+    Parameters
+    ----------
+    mu : float
+        DESCRIPTION.
+    sigma : TYPE
+        DESCRIPTION.
+    t : float or (numpy float vector)
+        times at which to evaluate the function
+    brown : numpy float vector
+        The brownian path to use in the stochastic process
+    """
     return np.exp((mu-sigma**2/2)*t + sigma*brown)
 
-size = 10
 
-brown = noise(size)
 
-stochs = [None] * size
+brown = noise(size) # save the brownian motions
 
-for i in range(0,size):
+stochs = [None] * size # initalize vectors to save the vectors in / equivalent to matrix
+
+for i in range(0,size): # compute the approximations of the stochastic process at different resolutions
     stochs[i] = stoch_approx(2,1,brown[i])
-    plt.plot(np.linspace(0,1,len(stochs[i])),stochs[i])
+    plt.plot(np.linspace(0,1,len(stochs[i])),stochs[i]) # plot the approximations
 
 true = stoch_true(2, 1, np.linspace(0,1,1025), brown[0])
-plt.plot(np.linspace(0,1,len(stochs[0])+1), true[0:1025], label = "true",linestyle="dotted")
+plt.plot(np.linspace(0,1,len(stochs[0])+1), true[0:1025], label = "true",linestyle="dotted") # plot the true stochastic process
 
 plt.xlabel("(t)")
 plt.ylabel("X(t)")
@@ -80,42 +101,43 @@ plt.legend()
 
 #%% Question 3
 size = 10
-M = 1000
+M = 1000 # The size of the Monte Carlo approximation, larger M leads to smaller error
 
 N = 2**size
 
-values = np.empty([M,size])
+values = np.empty([M,size]) # initalize matrix to save values
 
-for m in range(0,M):
-    brown = noise(size)
+for m in range(0,M):  # Monte Carlo approximation
+    brown = noise(size) # compute new brownian noise
     
-    last_true = stoch_true(2, 1, 1, brown[i][-1])
+    last_true = stoch_true(2, 1, 1, brown[i][-1]) # compute the last element of the stochastic process based on this noise
 
     stochs = [None] * size
-    for i in range(0, size):
-        stochs[i] = stoch_approx(2,1,brown[i])
-        values[m,i] = (stochs[i][-1] - last_true)**2
+    for i in range(0, size): # Compute for all resolutions
+        stochs[i] = stoch_approx(2,1,brown[i]) 
+        values[m,i] = (stochs[i][-1] - last_true)**2 # compute the difference of the last element of the approximation of the stochastic process 
+        # and the last element of the true stochastic process squared. Based on the noise computed above
 
-#%%
+strong = np.empty(size) # vector to save the strong error in
 
-strong = np.empty(size)
+for i in range(0,size): # iterate over resolutions/columns
+    strong[i] = np.sqrt(sum(values[:,i])/M) # sum the values in a column and take the square root, this is the strong error
 
-for i in range(0,size):
-    strong[i] = np.sqrt(sum(values[:,i])/M)
+h = np.logspace(10,1,10,base=2) # in the computations i = 1 corresponds to the finest resolution because of how i computed the noise,
+# so flip the vector
+h = 1/h # the size of h_i = h^(-i)
 
-t = np.logspace(10,1,10,base=2) # in the computations i = 1 corresponds to i = 10 because of how i computed the noise
-t = 1/t
-
-plt.loglog(t, strong, "ro", base=2,label="strong")
-plt.loglog(t,np.sqrt(t),base = 2, label = "$\sqrt{h}$")
+plt.loglog(h, strong, "ro", base=2,label="strong")
+plt.loglog(h,np.sqrt(h),base = 2, label = "$\sqrt{h}$")
 plt.xlabel("h")
 plt.ylabel("Strong error")
 plt.legend()
 
 #%% Question 4
+#almost same implemantion as above
 mu = 2
 sigma = 1
-M = 15000
+M = 1000
 
 values = np.empty([M,size])
 
@@ -126,26 +148,24 @@ for m in range(0,M):
     
     for i in range(0, size):
         stochs[i] = stoch_approx(2,1,brown[i])
-        values[m,i] = stochs[i][-1]
+        values[m,i] = stochs[i][-1]  # instead save only the last element of the stochastic approximation
 
-#%%
 weak = np.empty(size)
 
 for i in range(0,size):
-    weak[i] = np.abs(sum(values[:, i])/M - np.exp(mu))
+    weak[i] = np.abs(sum(values[:, i])/M - np.exp(mu)) # compute the weak error
     
-t = np.logspace(10,1,10,base=2)
-t = 1/t
+h = np.logspace(10,1,10,base=2)
+h = 1/h
 
-#%%
-
-plt.loglog(t, weak, "ro",base=2, label="weak error")
-plt.loglog(t,t,base = 2, label = "$h$")
+plt.loglog(h, weak, "ro",base=2, label="weak error")
+plt.loglog(h,h,base = 2, label = "$h$")
 plt.xlabel("h")
 plt.ylabel("weak error")
 plt.legend()
 
 #%% Question 5
+# same implementation as Question 4 but using a different testing function, as described in the report
 mu = 2
 sigma = 1
 M = 1000
@@ -161,7 +181,6 @@ for m in range(0,M):
         stochs[i] = stoch_approx(2,1,brown[i])
         values[m,i] = stochs[i][-1]
         
-#%%
 weak = np.empty(size)
 var = np.empty(size)
 mu=2
@@ -169,19 +188,13 @@ mu=2
 for i in range(0,size):
     xsum = sum(values[:, i])
     var[i] = sum((values[:,i]-xsum/M)**2)/(len(values[:,i])-1)
-    weak[i] = np.abs(np.exp(5) - ((xsum/M)**2 + var[i]))
+    weak[i] = np.abs(np.exp(5) - ((xsum/M)**2 + var[i])) # save the weak error with testing function phi=x^2
 
-t = np.logspace(10,1,10,base=2)
-t = 1/t
+h= np.logspace(10,1,10,base=2)
+h = 1/h
 
-plt.loglog(t, weak, "ro",base=2, label="weak error")
-plt.loglog(t,t,base = 2, label = "$h$")
+plt.loglog(h, weak, "ro",base=2, label="weak error")
+plt.loglog(h,h,base = 2, label = "$h$")
 plt.xlabel("h")
 plt.ylabel("weak error")
 plt.legend()
-
-#%%
-plt.plot(t,weak)
-print(weak)
-
-
