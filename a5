@@ -1,0 +1,41 @@
+# Set parameters for Riemann sum
+n <- 500            # Number of intervals for Riemann sum
+a <- 0              # Lower limit of the X integral
+b <- 10             # Upper limit of the X integral
+c <- -1             # Lower limit of the Y integral
+d <- 2              # Upper limit of the Y integral
+
+# Discretize X and Y into equally spaced points
+x_values <- seq(a, b, length.out = n)
+y_values <- seq(c, d, length.out = n)
+
+# Define the PDFs for X and Y (normal distributions)
+f_X <- function(x) {
+  dnorm(x, mean = 5, sd = 1.5)
+}
+
+f_Y <- function(y) {
+  dnorm(y, mean = 0.5, sd = 0.3)
+}
+
+# Define the integrand exp(-y) * x * f_X(x) * f_Y(y)
+integrand <- function(x, y) {
+  exp(-y) * x * f_X(x) * f_Y(y)
+}
+
+# Compute the Riemann sum
+dx <- (b - a) / (n - 1)
+dy <- (d - c) / (n - 1)
+
+# Initialize the sum
+riemann_sum <- 0
+
+# Perform the double sum over X and Y
+for (x in x_values) {
+  for (y in y_values) {
+    riemann_sum <- riemann_sum + integrand(x, y) * dx * dy
+  }
+}
+
+# Output the approximate expectation
+print(riemann_sum)
