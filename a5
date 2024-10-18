@@ -1,41 +1,83 @@
-# Set parameters for Riemann sum
-n <- 500            # Number of intervals for Riemann sum
-a <- 0              # Lower limit of the X integral
-b <- 10             # Upper limit of the X integral
-c <- -1             # Lower limit of the Y integral
-d <- 2              # Upper limit of the Y integral
+## Question 1
 
-# Discretize X and Y into equally spaced points
-x_values <- seq(a, b, length.out = n)
-y_values <- seq(c, d, length.out = n)
+# (i) {2,4,6,8,10,12}
+# (ii) {2,3,4,5,6,7,8,9,10,11,12}
 
-# Define the PDFs for X and Y (normal distributions)
-f_X <- function(x) {
-  dnorm(x, mean = 5, sd = 1.5)
-}
+## Question 2
 
-f_Y <- function(y) {
-  dnorm(y, mean = 0.5, sd = 0.3)
-}
+# X = {1,2,3,4,5,6} with probability 1/6 for each.
 
-# Define the integrand exp(-y) * x * f_X(x) * f_Y(y)
-integrand <- function(x, y) {
-  exp(-y) * x * f_X(x) * f_Y(y)
-}
-
-# Compute the Riemann sum
-dx <- (b - a) / (n - 1)
-dy <- (d - c) / (n - 1)
-
-# Initialize the sum
-riemann_sum <- 0
-
-# Perform the double sum over X and Y
-for (x in x_values) {
-  for (y in y_values) {
-    riemann_sum <- riemann_sum + integrand(x, y) * dx * dy
+# Question 3
+sum_ = 0
+for (i in 1:6) {
+  for (j in 1:6) {
+    sum_ = sum_ + i*j*1/36
   }
 }
 
-# Output the approximate expectation
-print(riemann_sum)
+print(sum_)
+
+# Question 4
+phi = function(x){
+  1/sqrt(2*pi)*exp(-x**2/2)
+}
+
+N = 3000
+x = seq(-1,1,length.out = N)
+h = 2/N
+I_1 = sum(phi(x)*h)
+I_2 = integrate(phi,-1,1)
+
+cat("Riemann",I_1, "\nintegrate",I_2$value, "\ndifference: ", I_1-I_2$value)
+
+# Question 5
+#(a)
+
+f = function(t,Y,X) {
+  X*exp(-t*Y)
+}
+
+N = 10
+
+X = rnorm(N, mean = 5, sd = 1.5)
+Y = rnorm(N, mean =0.5, sd = 0.3)
+
+t = seq(0,1,0.1)
+
+height = matrix(nrow = length(t),ncol = N)
+plot(NULL, xlim=c(0,1), ylim=c(-1,9), ylab="height u(t)", xlab="time (t)")
+
+color = c("red","green","black","blue")
+
+for (i in 1:N) {
+  height[,i] = f(t,Y[i],X[i])
+  lines(t,height[,i],col = sample(color))
+}
+
+#(b)
+
+f = function(t,X,Y) {
+  X*exp(-t*Y)*dnorm(X,mean=5,sd=1.5)*dnorm(Y,mean=0.5,sd=0.3)
+}
+
+n=500
+a=0
+b=10
+c=-1
+d=2
+
+h1 = (b-a)/(n-1)
+h2 = (d-c)/(n-1)
+
+x = seq(a,b,length.out=n)
+y = seq(c,d,length.out=n)
+
+sum_ = 0
+
+for (x_ in x) {
+  for (y_ in y) {
+    sum_ = sum_ + f(1,x_,y_)*h1*h2
+  }
+}
+
+print(sum_)
