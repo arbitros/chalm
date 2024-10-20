@@ -1,0 +1,104 @@
+setwd("~/chalmers/Stochastic Data/A6")
+
+# Question 1
+# (a)
+theta = 13
+b1=10
+b2=-6
+b3=-1
+n=10000
+
+p_zx = function(x,mu,gamma) {
+  exp((x-mu)*exp(-gamma))/(1+exp((x-mu)*exp(-gamma)))
+}
+
+x = rgamma(n,2.5,0.25)
+supp = x[which(x>theta)]
+y = p_zx(supp,15,1)
+
+y > runif(length(supp))
+
+alpha = 0.25 # the boundary for which a product is called successful
+
+success = sum(y)
+failure = length(y)-success
+
+utility = c(success*b1, failure*b2, (n-length(supp))*b3)
+cat(utility)
+
+# (b)
+# Use Monte Carlo approximation
+M=1000
+S = 0
+for (i in 1:M) {
+  x = rgamma(n,2.5,0.25)
+  supp = x[which(x>theta)]
+  y = p_zx(supp,15,1)
+  
+  y > runif(length(supp))
+  
+  success = sum(y)
+  failure = length(y)-success
+  
+  S = S + success*b1 + failure*b2 + (n-length(supp))*b3
+}
+expV = S/M
+print(expV) # -13013
+
+# (c)
+
+M=1000
+
+theta = seq(10,20,0.5)
+N = length(theta)
+theta_val = vector("numeric", N)
+
+for (j in 1:N) {
+  S = 0
+  for (i in 1:M) {
+    x = rgamma(n,2.5,0.25)
+    supp = x[which(x>theta[j])]
+    y = p_zx(supp,15,1)
+    
+    y > runif(length(supp))
+    
+    success = sum(y)
+    failure = length(y)-success
+    
+    S = S + success*b1 + failure*b2 + (n-length(supp))*b3
+  }
+  theta_val[j] = S/M
+}
+
+plot(theta,theta_val,type="b",col="blue")
+
+# Question 2
+
+# Question 3
+
+success = sort(read.csv("successful.txt")[,1])
+failure = sort(read.csv("unsuccessful.txt")[,1])
+
+plot(success, p_zx(success,15,1))
+plot(failure, p_zx(failure,15,1))
+
+plot(NULL, xlim=c(5,34), ylim=c(0,1), ylab="y label", xlab="x lablel")
+for (i in 1:10) {
+  mu = i*3
+  gamma = i/13
+  points(success, p_zx(success,mu,gamma))
+  xs = seq(success[1],success[length(success)],0.1)
+  
+  lines(xs , p_zx(xs,mu,gamma))
+}
+
+plot(NULL, xlim=c(failure[1],failure[length(failure)]), ylim=c(0,1), ylab="y label", xlab="x lablel")
+for (i in 1:10) {
+  mu = i*3
+  gamma = i/13
+  points(failure, p_zx(failure,mu,gamma))
+  xs = seq(failure[1],failure[length(failure)],0.1)
+  
+  lines(xs , p_zx(xs,mu,gamma))
+}
+
