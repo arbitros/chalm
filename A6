@@ -18,13 +18,11 @@ y = p_zx(supp,15,1)
 
 y > runif(length(supp))
 
-alpha = 0.25 # the boundary for which a product is called successful
-
 success = sum(y)
 failure = length(y)-success
 
 utility = c(success*b1, failure*b2, (n-length(supp))*b3)
-cat(utility)
+cat(sum(utility)/n)
 
 # (b)
 # Use Monte Carlo approximation
@@ -49,7 +47,7 @@ print(expV) # -13013
 
 M=1000
 
-theta = seq(10,20,0.5)
+theta = seq(10,20,1)
 N = length(theta)
 theta_val = vector("numeric", N)
 
@@ -74,13 +72,32 @@ plot(theta,theta_val,type="b",col="blue")
 
 # Question 2
 
+theta = 13
+b1=10
+b2=-6
+b3=-1
+
+p_zx = function(x,mu = 15,gamma = 1) {
+  exp((x-mu)*exp(-gamma))/(1+exp((x-mu)*exp(-gamma)))
+}
+
+f = function(x,mu,gamma) {
+  utility = ifelse(x > theta, p_zx(x,mu,gamma) * b1 + (1-p_zx(x,mu,gamma)) * b2, b3)
+  return (utility * dgamma(x, 2.5, 0.25))
+}
+
+h = 0.1
+xs = seq(0,100,h)
+S = sum(f(xs,15,1))*h
+print(S) # correct
+
 # Question 3
 
 success = sort(read.csv("successful.txt")[,1])
 failure = sort(read.csv("unsuccessful.txt")[,1])
 
-plot(success, p_zx(success,15,1))
-plot(failure, p_zx(failure,15,1))
+plot(c(success,failure), c(rep(1, length(success)), rep(0,length(failure))))
+plot(c(success,falure), p_zx(success,failure) )
 
 plot(NULL, xlim=c(5,34), ylim=c(0,1), ylab="y label", xlab="x lablel")
 for (i in 1:10) {
@@ -101,4 +118,5 @@ for (i in 1:10) {
   
   lines(xs , p_zx(xs,mu,gamma))
 }
+
 
