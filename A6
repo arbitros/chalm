@@ -8,64 +8,45 @@ b2=-6
 b3=-1
 n=10000
 
-p_zx = function(x,mu,gamma) {
+p_zx = function(x,mu = 15,gamma = 1) {
   exp((x-mu)*exp(-gamma))/(1+exp((x-mu)*exp(-gamma)))
 }
 
-x = rgamma(n,2.5,0.25)
-supp = x[which(x>theta)]
-y = p_zx(supp,15,1)
+x_val = rgamma(n,2.5,0.25)
 
-y > runif(length(supp))
+invested = x_val[which(x_val >= theta)]
+abandoned = x_val[which(x_val < theta)]
 
-success = sum(y)
-failure = length(y)-success
+result = rbinom(length(invested),1,p_zx(invested))
 
-utility = c(success*b1, failure*b2, (n-length(supp))*b3)
-cat(sum(utility)/n)
+success = sum(result)*b1
+unsuccess = sum(!result)*b2
+abandoned = length(abandoned)*b3
+utilityTOT = success+unsuccess+abandoned
 
 # (b)
-# Use Monte Carlo approximation
-M=1000
-S = 0
-for (i in 1:M) {
-  x = rgamma(n,2.5,0.25)
-  supp = x[which(x>theta)]
-  y = p_zx(supp,15,1)
-  
-  y > runif(length(supp))
-  
-  success = sum(y)
-  failure = length(y)-success
-  
-  S = S + success*b1 + failure*b2 + (n-length(supp))*b3
-}
-expV = S/M
-print(expV) # -13013
+
+cat(utilityTOT/n)
 
 # (c)
-
-M=1000
 
 theta = seq(10,20,1)
 N = length(theta)
 theta_val = vector("numeric", N)
-
 for (j in 1:N) {
-  S = 0
-  for (i in 1:M) {
-    x = rgamma(n,2.5,0.25)
-    supp = x[which(x>theta[j])]
-    y = p_zx(supp,15,1)
+  x_val = rgamma(n,2.5,0.25)
+  
+  invested = x_val[which(x_val >= theta[j])]
+  abandoned = x_val[which(x_val < theta[j])]
+  
+  result = rbinom(length(invested),1,p_zx(invested))
+  
+  success = sum(result)*b1
+  unsuccess = sum(!result)*b2
+  abandoned = length(abandoned)*b3
+  utilityTOT = success+unsuccess+abandoned
     
-    y > runif(length(supp))
-    
-    success = sum(y)
-    failure = length(y)-success
-    
-    S = S + success*b1 + failure*b2 + (n-length(supp))*b3
-  }
-  theta_val[j] = S/M
+  theta_val[j] = utilityTOT/n
 }
 
 plot(theta,theta_val,type="b",col="blue")
@@ -92,31 +73,149 @@ S = sum(f(xs,15,1))*h
 print(S) # correct
 
 # Question 3
-
+# (a)
 success = sort(read.csv("successful.txt")[,1])
 failure = sort(read.csv("unsuccessful.txt")[,1])
 
-plot(c(success,failure), c(rep(1, length(success)), rep(0,length(failure))))
-plot(c(success,falure), p_zx(success,failure) )
+data = c(success,failure)
 
-plot(NULL, xlim=c(5,34), ylim=c(0,1), ylab="y label", xlab="x lablel")
-for (i in 1:10) {
-  mu = i*3
-  gamma = i/13
-  points(success, p_zx(success,mu,gamma))
-  xs = seq(success[1],success[length(success)],0.1)
-  
-  lines(xs , p_zx(xs,mu,gamma))
+mu = c(8,10,12,15,18)
+gamma = c(0.6,0.7,0.8,1.0,1.2)
+
+plot(data, c(rep(1, length(success)), rep(0,length(failure))))
+xs = seq(0,40, 0.1)
+colors = c("blue","orange","red","purple","violet")
+for (i in 1:length(mu)) {
+  lines(xs,p_zx(xs,mu[i],gamma[i]),col=colors[i])
+}
+legend("bottomright", legend = paste("mu =", mu, ", gamma =", gamma), 
+       col = colors, lty = 1, title = "Legend")
+lines(xs, p_zx(xs,15,1))
+
+# (b)
+
+p_zx = function(x,mu = 15,gamma = 1) {
+  exp((x-mu)*exp(-gamma))/(1+exp((x-mu)*exp(-gamma)))
 }
 
-plot(NULL, xlim=c(failure[1],failure[length(failure)]), ylim=c(0,1), ylab="y label", xlab="x lablel")
-for (i in 1:10) {
-  mu = i*3
-  gamma = i/13
-  points(failure, p_zx(failure,mu,gamma))
-  xs = seq(failure[1],failure[length(failure)],0.1)
-  
-  lines(xs , p_zx(xs,mu,gamma))
+logpost = function(mu_,gamma_) {
+  lls = sum(log(p_zx(success,mu_,gamma_)))
+  llf = sum(log(1-p_zx(failure,mu_,gamma_)))
+  return (lls+llf)
 }
+
+#c)
+m = 100
+mu = seq(11,17,length.out=m)
+gamma = seq(0.5,1.5,length.out=m)
+
+logpost_mat = outer(mu, gamma, Vectorize(logpost))
+
+logpost_mat = matrix(logpost_mat, nrow = length(mu), ncol = length(gamma), byrow = TRUE)
+post_mat = exp(logpost_mat)
+post_mat = post_mat/sum(post_mat) #normalize
+
+image(mu, gamma, post_mat, xlab = expression(mu), ylab = expression(gamma),col = heat.colors(10))
+
+high_prob_indices = which(post_mat > max(post_mat*0.8), arr.ind=TRUE)
+dim(high_prob_indices)
+
+mu_low = mu[high_prob_indices[1,1]]
+mu_high = mu[high_prob_indices[length(high_prob_indices[,1]),1]]
+
+gamma_low = gamma[high_prob_indices[1,1]]
+gamma_high = gamma[high_prob_indices[length(high_prob_indices[,1]),2]]
+
+cat(mu_low,mu_high,gamma_low,gamma_high)
+
+# Question 4
+
+logpost_negative = function(params) {
+  mu_ = params[1]
+  gamma_ = params[2]
+  lls = sum(log(p_zx(success,mu_,gamma_)))
+  llf = sum(log(1-p_zx(failure,mu_,gamma_)))
+  return (-(lls+llf))
+}
+
+guess = c(mean(mu_low,mu_high),mean(gamma_low,gamma_high))
+
+result = nlm(logpost_negative, guess)
+
+param_opt = result$estimate
+
+cat("mu: ", param_opt[1], "gamma: ", param_opt[2])
+
+# Question 5
+
+b1=10
+b2=-6
+b3=-1
+
+f = function(x, mu, gamma, theta) {
+  utility = ifelse(x >= theta, p_zx(x, mu, gamma) * b1 + (1 - p_zx(x, mu, gamma)) * b2, b3)
+  return (utility * dgamma(x, shape = 2.5, rate = 0.25))
+}
+
+exp_theta = function(theta, mu, gamma, h = 0.1) {
+  xs = seq(0, 40, h)
+  
+  S = sum(f(xs, mu, gamma, theta)) * h
+  
+  return (-S)
+}
+
+result = nlm(exp_theta, p = 13, mu = param_opt[1], gamma = param_opt[2])
+
+opt_theta <- result$estimate
+
+cat("Optimized value of θ:", opt_theta)
+
+# Question 6
+
+h = 0.1
+xs = seq(0, 40, h)
+
+# Define the utility function
+expected_utility <- function(theta, mu_vals, gamma_vals, post_mat, success, failure) {
+  total_utility <- 0
+  
+  # Iterate over the grid of (mu, gamma) pairs and calculate the utility
+  for (i in 1:length(mu_vals)) {
+    for (j in 1:length(gamma_vals)) {
+      mu <- mu_vals[i]
+      gamma <- gamma_vals[j]
+      posterior_prob <- post_mat[i, j]
+      
+      # Utility for products where X >= theta (supported products)
+      support_prob <- p_zx(xs, mu, gamma)  # Probability of success for given X
+      U_support <- support_prob * b1 + (1 - support_prob) * b2  # Utility for supporting
+      
+      # Utility for products where X < theta (abandoned products)
+      U_abandon <- b3  # Utility for abandoning
+      
+      # Calculate the expected utility over both regions
+      U_total <- ifelse(xs >= theta, U_support, U_abandon)
+      
+      # Weight by the posterior probability of the (mu, gamma) pair
+      total_utility <- total_utility + sum(U_total) * posterior_prob
+    }
+  }
+  
+  return(total_utility)
+}
+
+# Optimization to find the theta that maximizes expected utility
+opt_result <- optimize(expected_utility, 
+                       interval = c(min(xs), max(xs)),  # Define range for theta
+                       mu_vals = mu, 
+                       gamma_vals = gamma, 
+                       post_mat = post_mat, 
+                       success = success, 
+                       failure = failure, 
+                       maximum = TRUE)
+
+optimal_theta <- opt_result$maximum
+cat("Optimal Theta (averaged over posterior):", optimal_theta)
 
 
